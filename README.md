@@ -120,3 +120,39 @@ adaptador inicial para piloto: os dados ainda ficam no volume Docker e os
 jobs ficam em memória. Antes de produção, devem ser migrados para object
 storage, PostgreSQL/pgvector e uma fila persistente, conforme o plano de
 migração.
+
+## Provedor de LLM/embeddings (Ollama local x DeepSeek na nuvem)
+
+Instâncias de nuvem pequenas/baratas (ex.: o menor plano do AWS Lightsail)
+não têm RAM/CPU suficiente para rodar o Ollama com um modelo como o
+`llama3.1:8b`. Por isso o LLM de geração/extração de metadados agora é
+plugável, controlado por `DUO_RAG_LLM_PROVIDER`:
+
+- `ollama` (padrão): 100% local, como descrito acima. Requer Ollama rodando.
+- `deepseek`: usa a [API do DeepSeek](https://api-docs.deepseek.com/)
+  (compatível com a API da OpenAI) para chat e extração de metadados.
+  Não precisa de GPU nem de um LLM rodando na própria instância.
+
+Variáveis relevantes:
+
+```powershell
+$env:DUO_RAG_LLM_PROVIDER = "deepseek"
+$env:DUO_RAG_DEEPSEEK_API_KEY = "sk-..."       # nunca commitar
+$env:DUO_RAG_DEEPSEEK_BASE_URL = "https://api.deepseek.com"  # padrão
+$env:DUO_RAG_DEEPSEEK_MODEL = "deepseek-chat"                # padrão
+```
+
+Os **embeddings continuam locais** mesmo com `DUO_RAG_LLM_PROVIDER=deepseek`,
+pois a API do DeepSeek não oferece endpoint de embeddings — e isso também
+evita mandar o texto completo dos documentos para uma segunda API. O modelo
+usado é um modelo multilíngue leve (`sentence-transformers/paraphrase-
+multilingual-MiniLM-L12-v2`, ~470MB, roda bem em CPU), controlado por
+`DUO_RAG_EMBEDDING_PROVIDER` (`local`, padrão quando `LLM_PROVIDER=deepseek`,
+ou `ollama` para usar o `nomic-embed-text` local como antes).
+
+> Importante: trocar o provedor de embeddings **depois** de já ter
+> indexado documentos exige reindexar tudo (os vetores de modelos
+> diferentes não são comparáveis). Rode `python scripts\ingest_all.py`
+> novamente após mudar `DUO_RAG_EMBEDDING_PROVIDER` — a indexação sempre
+> substitui os chunks antigos de cada documento.
+
