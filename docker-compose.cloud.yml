@@ -1,0 +1,14 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DUO_RAG_API_KEY: ${DUO_RAG_API_KEY}
+      DUO_RAG_OLLAMA_HOST: ${DUO_RAG_OLLAMA_HOST:-http://host.docker.internal:11434}
+    volumes:
+      - duo_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  duo_data:

@@ -1,0 +1,32 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Dados sensíveis (documentos da firma) - nunca versionar
+data/raw/
+data/processed/
+data/catalog/
+data/chroma/
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Build do executável
+build/
+dist/
+*.spec.bak
+
+# Variáveis de ambiente / segredos
+.env
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
