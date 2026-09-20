@@ -88,27 +88,46 @@ OLLAMA_EMBEDDING_MODEL = os.environ.get(
 # "deepseek": usa a API do DeepSeek (compatível com a API da OpenAI) para o
 #   LLM. Recomendado em instâncias de nuvem pequenas/baratas, onde não há
 #   recursos para rodar um LLM localmente.
+# "gemini": usa a API do Google Gemini (tem free tier), também compatível
+#   com a API da OpenAI através do endpoint dedicado do Google.
 LLM_PROVIDER = os.environ.get("DUO_RAG_LLM_PROVIDER", "ollama").lower()
+
 DEEPSEEK_API_KEY = os.environ.get("DUO_RAG_DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get(
     "DUO_RAG_DEEPSEEK_BASE_URL", "https://api.deepseek.com"
 )
 DEEPSEEK_MODEL = os.environ.get("DUO_RAG_DEEPSEEK_MODEL", "deepseek-chat")
 
+GEMINI_API_KEY = os.environ.get("DUO_RAG_GEMINI_API_KEY", "")
+GEMINI_BASE_URL = os.environ.get(
+    "DUO_RAG_GEMINI_BASE_URL",
+    "https://generativelanguage.googleapis.com/v1beta/openai/",
+)
+# gemini-2.0-flash tem free tier generoso (requisições/dia) e é rápido o
+# suficiente para chat + extração de metadados.
+GEMINI_MODEL = os.environ.get("DUO_RAG_GEMINI_MODEL", "gemini-2.0-flash")
+
 # "ollama": embeddings via Ollama (modelo nomic-embed-text).
 # "local": modelo de embeddings leve rodando via sentence-transformers, sem
 #   depender de GPU/serviço externo. Usado como padrão quando o provedor de
-#   LLM é uma API externa, pois o DeepSeek não oferece endpoint de
-#   embeddings; manter os embeddings locais também evita expor o texto dos
-#   documentos a uma segunda API.
+#   LLM é uma API externa (DeepSeek não oferece endpoint de embeddings;
+#   preferimos manter os embeddings locais mesmo com Gemini, que oferece um
+#   endpoint próprio, para não expor o texto completo dos documentos a mais
+#   uma API e evitar limites de cota do free tier). Defina
+#   DUO_RAG_EMBEDDING_PROVIDER=gemini para usar o endpoint de embeddings do
+#   Gemini em vez do modelo local, se preferir.
 EMBEDDING_PROVIDER = os.environ.get(
-    "DUO_RAG_EMBEDDING_PROVIDER", "local" if LLM_PROVIDER == "deepseek" else "ollama"
+    "DUO_RAG_EMBEDDING_PROVIDER",
+    "local" if LLM_PROVIDER in ("deepseek", "gemini") else "ollama",
 ).lower()
 # Modelo multilíngue pequeno (~470MB, roda bem em CPU/pouca RAM) — necessário
 # porque os documentos da Duo estão em português.
 LOCAL_EMBEDDING_MODEL = os.environ.get(
     "DUO_RAG_LOCAL_EMBEDDING_MODEL",
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+)
+GEMINI_EMBEDDING_MODEL = os.environ.get(
+    "DUO_RAG_GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
 )
 
 API_KEY = os.environ.get("DUO_RAG_API_KEY", "")

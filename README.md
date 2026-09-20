@@ -121,7 +121,7 @@ jobs ficam em memória. Antes de produção, devem ser migrados para object
 storage, PostgreSQL/pgvector e uma fila persistente, conforme o plano de
 migração.
 
-## Provedor de LLM/embeddings (Ollama local x DeepSeek na nuvem)
+## Provedor de LLM/embeddings (Ollama local x DeepSeek/Gemini na nuvem)
 
 Instâncias de nuvem pequenas/baratas (ex.: o menor plano do AWS Lightsail)
 não têm RAM/CPU suficiente para rodar o Ollama com um modelo como o
@@ -131,24 +131,41 @@ plugável, controlado por `DUO_RAG_LLM_PROVIDER`:
 - `ollama` (padrão): 100% local, como descrito acima. Requer Ollama rodando.
 - `deepseek`: usa a [API do DeepSeek](https://api-docs.deepseek.com/)
   (compatível com a API da OpenAI) para chat e extração de metadados.
-  Não precisa de GPU nem de um LLM rodando na própria instância.
+- `gemini`: usa a [API do Google Gemini](https://ai.google.dev/gemini-api/docs/openai)
+  através do endpoint compatível com a API da OpenAI. Tem **free tier**
+  (chave gratuita em https://aistudio.google.com/apikey), o que evita custo
+  de LLM enquanto o volume de uso for baixo.
+
+Nenhuma dessas duas últimas opções precisa de GPU ou de um LLM rodando na
+própria instância.
 
 Variáveis relevantes:
 
 ```powershell
+# DeepSeek
 $env:DUO_RAG_LLM_PROVIDER = "deepseek"
 $env:DUO_RAG_DEEPSEEK_API_KEY = "sk-..."       # nunca commitar
 $env:DUO_RAG_DEEPSEEK_BASE_URL = "https://api.deepseek.com"  # padrão
 $env:DUO_RAG_DEEPSEEK_MODEL = "deepseek-chat"                # padrão
+
+# Gemini (free tier)
+$env:DUO_RAG_LLM_PROVIDER = "gemini"
+$env:DUO_RAG_GEMINI_API_KEY = "AI..."          # nunca commitar
+$env:DUO_RAG_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"  # padrão
+$env:DUO_RAG_GEMINI_MODEL = "gemini-2.0-flash"               # padrão
 ```
 
-Os **embeddings continuam locais** mesmo com `DUO_RAG_LLM_PROVIDER=deepseek`,
-pois a API do DeepSeek não oferece endpoint de embeddings — e isso também
-evita mandar o texto completo dos documentos para uma segunda API. O modelo
-usado é um modelo multilíngue leve (`sentence-transformers/paraphrase-
-multilingual-MiniLM-L12-v2`, ~470MB, roda bem em CPU), controlado por
-`DUO_RAG_EMBEDDING_PROVIDER` (`local`, padrão quando `LLM_PROVIDER=deepseek`,
-ou `ollama` para usar o `nomic-embed-text` local como antes).
+Os **embeddings continuam locais por padrão** mesmo com
+`DUO_RAG_LLM_PROVIDER=deepseek` ou `gemini`, para não depender da cota do
+free tier nem mandar o texto completo dos documentos para uma segunda API.
+O modelo usado é um modelo multilíngue leve (`sentence-transformers/
+paraphrase-multilingual-MiniLM-L12-v2`, ~470MB, roda bem em CPU), controlado
+por `DUO_RAG_EMBEDDING_PROVIDER`:
+
+- `local` (padrão quando `LLM_PROVIDER` é `deepseek` ou `gemini`);
+- `ollama` para usar o `nomic-embed-text` local como antes;
+- `gemini` para usar o endpoint de embeddings do próprio Gemini
+  (`gemini-embedding-001`) em vez do modelo local, se preferir.
 
 > Importante: trocar o provedor de embeddings **depois** de já ter
 > indexado documentos exige reindexar tudo (os vetores de modelos

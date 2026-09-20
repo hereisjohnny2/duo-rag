@@ -5,14 +5,18 @@ services:
       - "8000:8000"
     environment:
       DUO_RAG_API_KEY: ${DUO_RAG_API_KEY}
-      # Provedor de LLM: "ollama" (exige Ollama acessível) ou "deepseek"
-      # (recomendado em instâncias pequenas, sem RAM/CPU para um LLM local).
-      DUO_RAG_LLM_PROVIDER: ${DUO_RAG_LLM_PROVIDER:-deepseek}
+      # Provedor de LLM: "ollama" (exige Ollama acessível), "deepseek" ou
+      # "gemini" (tem free tier). Recomendado em instâncias pequenas, sem
+      # RAM/CPU para um LLM local.
+      DUO_RAG_LLM_PROVIDER: ${DUO_RAG_LLM_PROVIDER:-gemini}
       DUO_RAG_DEEPSEEK_API_KEY: ${DUO_RAG_DEEPSEEK_API_KEY}
       DUO_RAG_DEEPSEEK_BASE_URL: ${DUO_RAG_DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       DUO_RAG_DEEPSEEK_MODEL: ${DUO_RAG_DEEPSEEK_MODEL:-deepseek-chat}
-      # Embeddings ficam locais (leve, CPU-only) por padrão; só usa Ollama se
-      # DUO_RAG_EMBEDDING_PROVIDER=ollama for definido explicitamente.
+      DUO_RAG_GEMINI_API_KEY: ${DUO_RAG_GEMINI_API_KEY}
+      DUO_RAG_GEMINI_BASE_URL: ${DUO_RAG_GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/}
+      DUO_RAG_GEMINI_MODEL: ${DUO_RAG_GEMINI_MODEL:-gemini-2.0-flash}
+      # Embeddings ficam locais (leve, CPU-only) por padrão; só usa Ollama ou
+      # Gemini se DUO_RAG_EMBEDDING_PROVIDER for definido explicitamente.
       DUO_RAG_EMBEDDING_PROVIDER: ${DUO_RAG_EMBEDDING_PROVIDER:-local}
       DUO_RAG_OLLAMA_HOST: ${DUO_RAG_OLLAMA_HOST:-http://host.docker.internal:11434}
     volumes:
