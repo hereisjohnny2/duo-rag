@@ -1,11 +1,10 @@
-"""Geração de resposta com o LLM local (Ollama), com base nos trechos
-recuperados do RAG. O prompt instrui o modelo a responder apenas com base
-no contexto fornecido e a citar a fonte (arquivo + página)."""
+"""Geração de resposta com o LLM configurado (Ollama local ou DeepSeek),
+com base nos trechos recuperados do RAG. O prompt instrui o modelo a
+responder apenas com base no contexto fornecido e a citar a fonte (arquivo
++ página)."""
 from __future__ import annotations
 
-import ollama
-
-from src import config
+from src.llm_client import chat_completion
 from src.rag.retriever import RetrievedChunk
 
 _SYSTEM_PROMPT = (
@@ -46,14 +45,12 @@ def generate_answer(question: str, chunks: list[RetrievedChunk]) -> str:
         "(arquivo e página)."
     )
 
-    response = ollama.chat(
-        model=config.OLLAMA_LLM_MODEL,
+    return chat_completion(
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
     )
-    return response["message"]["content"]
 
 
 _CATALOG_SYSTEM_PROMPT = (
@@ -86,11 +83,9 @@ def generate_catalog_answer(question: str, catalog_text: str) -> str:
         "usados como evidência."
     )
 
-    response = ollama.chat(
-        model=config.OLLAMA_LLM_MODEL,
+    return chat_completion(
         messages=[
             {"role": "system", "content": _CATALOG_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
     )
-    return response["message"]["content"]

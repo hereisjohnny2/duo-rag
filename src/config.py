@@ -75,12 +75,42 @@ MIN_NATIVE_TEXT_CHARS = 20
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 150
 
-# --- Ollama ---
+# --- Ollama (usado quando LLM_PROVIDER/EMBEDDING_PROVIDER = "ollama") ---
 OLLAMA_HOST = os.environ.get("DUO_RAG_OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_LLM_MODEL = os.environ.get("DUO_RAG_LLM_MODEL", "llama3.1:8b")
 OLLAMA_EMBEDDING_MODEL = os.environ.get(
     "DUO_RAG_EMBEDDING_MODEL", "nomic-embed-text"
 )
+
+# --- Provedor de LLM/embeddings ---
+# "ollama": 100% local, exige Ollama rodando (recomendado apenas quando a
+#   máquina tem RAM/CPU suficiente para o modelo, ex. 4GB+ para llama3.1:8b).
+# "deepseek": usa a API do DeepSeek (compatível com a API da OpenAI) para o
+#   LLM. Recomendado em instâncias de nuvem pequenas/baratas, onde não há
+#   recursos para rodar um LLM localmente.
+LLM_PROVIDER = os.environ.get("DUO_RAG_LLM_PROVIDER", "ollama").lower()
+DEEPSEEK_API_KEY = os.environ.get("DUO_RAG_DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.environ.get(
+    "DUO_RAG_DEEPSEEK_BASE_URL", "https://api.deepseek.com"
+)
+DEEPSEEK_MODEL = os.environ.get("DUO_RAG_DEEPSEEK_MODEL", "deepseek-chat")
+
+# "ollama": embeddings via Ollama (modelo nomic-embed-text).
+# "local": modelo de embeddings leve rodando via sentence-transformers, sem
+#   depender de GPU/serviço externo. Usado como padrão quando o provedor de
+#   LLM é uma API externa, pois o DeepSeek não oferece endpoint de
+#   embeddings; manter os embeddings locais também evita expor o texto dos
+#   documentos a uma segunda API.
+EMBEDDING_PROVIDER = os.environ.get(
+    "DUO_RAG_EMBEDDING_PROVIDER", "local" if LLM_PROVIDER == "deepseek" else "ollama"
+).lower()
+# Modelo multilíngue pequeno (~470MB, roda bem em CPU/pouca RAM) — necessário
+# porque os documentos da Duo estão em português.
+LOCAL_EMBEDDING_MODEL = os.environ.get(
+    "DUO_RAG_LOCAL_EMBEDDING_MODEL",
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+)
+
 API_KEY = os.environ.get("DUO_RAG_API_KEY", "")
 
 # --- Retrieval ---

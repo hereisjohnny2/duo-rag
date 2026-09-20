@@ -1,9 +1,9 @@
-"""Extração de metadados estruturados por documento usando o LLM local.
+"""Extração de metadados estruturados por documento usando o LLM configurado.
 
 Para cada documento processado (``data/processed/<nome>.json``), pede ao
-LLM (via Ollama) para extrair campos estruturados — cidade, endereço,
-proprietários, valor, data, matrícula, tipo de documento — e salva o
-resultado em ``data/catalog/<nome>.json``.
+LLM (Ollama local ou DeepSeek) para extrair campos estruturados — cidade,
+endereço, proprietários, valor, data, matrícula, tipo de documento — e
+salva o resultado em ``data/catalog/<nome>.json``.
 
 Esse catálogo é usado pelo pipeline de RAG para responder perguntas de
 agregação/contagem (ex.: "quantos imóveis existem em Rio das Ostras?"),
@@ -18,9 +18,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-import ollama
-
 from src import config
+from src.llm_client import chat_completion
 
 logger = logging.getLogger(__name__)
 
@@ -110,15 +109,13 @@ def extract_metadata_for_document(doc: dict) -> DocumentMetadata:
     source_file = doc["source_file"]
     text = _full_text(doc)
 
-    response = ollama.chat(
-        model=config.OLLAMA_LLM_MODEL,
+    response_content = chat_completion(
         messages=[{"role": "user", "content": _EXTRACTION_PROMPT + text}],
-        format="json",
+        json_mode=True,
     )
-    raw_content = response["message"]["content"]
 
     try:
-        parsed = _parse_llm_json(raw_content)
+        parsed = _parse_llm_json(response_content)
     except (json.JSONDecodeError, IndexError):
         logger.warning(
             "Não foi possível interpretar o JSON de metadados de %s; "
@@ -177,9 +174,10 @@ def extract_all_metadata(force: bool = False) -> int:
     for json_path in sorted(config.PROCESSED_DIR.glob("*.json")):
         try:
             extract_and_save_metadata(json_path, force=force)
-        except (ollama.ResponseError, ConnectionError, TimeoutError, OSError) as exc:
-            # Um erro do Ollama em um documento não deve impedir a ingestão
-            # dos demais. O arquivo pode ser reprocessado na próxima execução.
+        except Exception as exc:
+            # Um erro no provedor de LLM em um documento não deve impedir a
+            # ingestão dos demais. O arquivo pode ser reprocessado na
+            # próxima execução.
             logger.error(
                 "Falha ao extrair metadados de %s: %s",
                 json_path.name,

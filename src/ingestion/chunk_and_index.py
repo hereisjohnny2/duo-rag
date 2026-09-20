@@ -1,8 +1,8 @@
 """Chunking + geração de embeddings + indexação no ChromaDB.
 
 Lê os JSONs de ``data/processed`` (texto já extraído/OCR'd), quebra o texto
-em chunks e indexa no Chroma usando embeddings gerados localmente via
-Ollama.
+em chunks e indexa no Chroma usando embeddings gerados pelo provedor
+configurado (Ollama local ou um modelo local via sentence-transformers).
 """
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import logging
 from pathlib import Path
 
 import chromadb
-import ollama
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src import config
+from src import llm_client
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +42,8 @@ def get_collection():
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
-    """Gera embeddings para uma lista de textos usando o Ollama local."""
-    embeddings: list[list[float]] = []
-    for text in texts:
-        response = ollama.embeddings(model=config.OLLAMA_EMBEDDING_MODEL, prompt=text)
-        embeddings.append(response["embedding"])
-    return embeddings
+    """Gera embeddings para uma lista de textos usando o provedor configurado."""
+    return llm_client.embed_texts(texts)
 
 
 def _load_processed_document(json_path: Path) -> dict:

@@ -10,7 +10,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Instala o torch em sua variante CPU-only antes do resto: a variante padrão
+# do PyPI traz dependências de CUDA (GBs) desnecessárias em uma instância de
+# nuvem pequena sem GPU. Isso reduz bastante o tamanho final da imagem.
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir -r requirements.txt
+
+# Baixa o modelo de embeddings local durante o build (evita esperar/baixar
+# no primeiro request em produção e permite rodar 100% offline depois).
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
 
 COPY src ./src
 COPY scripts ./scripts
